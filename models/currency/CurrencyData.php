@@ -7,10 +7,10 @@ use app\helpers\DebugHelper;
 
 define("CURRENCY_API", "https://api.coincap.io/v2/rates");
 
-class Currency {
+class CurrencyData {
 
-    public function getExchangePair(string $from, $to): array {
-        $list = $this->getList();
+    protected function getExchangePair(string $from, $to): array {
+        $list = $this->getOriginalList();
         if ($list == []) {
             return [];
         }
@@ -20,7 +20,7 @@ class Currency {
             'currency_to' => NULL
         ];
 
-        foreach($list['data'] as $val) {
+        foreach($list as $val) {
             if ($val['symbol'] == $from) {
                 $result['currency_from'] = $val;
             }
@@ -37,13 +37,13 @@ class Currency {
         return [];
     }
 
-    public function getBySymbol(string $symbol): array {
-        $list = $this->getList();
+    protected function getBySymbol(string $symbol): array {
+        $list = $this->getOriginalList();
         if ($list == []) {
             return [];
         }
 
-        foreach($list['data'] as $val) {
+        foreach($list as $val) {
             if ($val['symbol'] == $symbol) {
                 return $val;
             }
@@ -52,7 +52,7 @@ class Currency {
         return [];
     }
 
-    public function getList(): array {
+    protected function getOriginalList(): array {
         $httpClient = new Client();
 
         // запрос на список курсов валют из стороннего сервиса
@@ -62,7 +62,7 @@ class Currency {
         ->send();
 
         if ($response->isOk) {
-            return $response->data;
+            return $response->data['data'];
         }
 
         return [];
