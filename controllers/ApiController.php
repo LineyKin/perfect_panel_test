@@ -11,6 +11,6 @@ class ApiController extends Controller {
     public function actionV1()
     {
         $cur = new Currency();
-        return json_encode($cur->getList());
+        return json_encode($cur->getExchangePair("RUB", "USD"));
     }
 }
