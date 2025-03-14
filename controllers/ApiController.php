@@ -34,6 +34,9 @@ class ApiController extends Controller {
         // Устанавливаем формат ответа JSON
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
+        /**
+         * Возвращаем ошибку, если не указан параметр method
+         */
         if(!isset($_GET['method'])) {
             Yii::$app->response->statusCode = BAD_REQUEST_CODE;
             return Yii::$app->response->data = [
@@ -43,6 +46,9 @@ class ApiController extends Controller {
             ];
         }
 
+        /**
+         * Возвращаем ошибку, если указан неизвестный параметр method
+         */
         if(!in_array($_GET['method'], [METHOD_RATES, METHOD_CONVERT])) {
             Yii::$app->response->statusCode = BAD_REQUEST_CODE;
             return Yii::$app->response->data = [
@@ -68,5 +74,7 @@ class ApiController extends Controller {
                 'data' => $data,
             ];
         }
+
+        // TODO доделать метод convert
     }
 }

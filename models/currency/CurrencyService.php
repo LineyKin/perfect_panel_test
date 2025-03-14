@@ -7,6 +7,9 @@ define("COMISSION_COEFFICIENT", 1.02); // наша комиисия - 2%
 
 class CurrencyService extends CurrencyData {
 
+    /**
+     * Возвращает список валют, курс которых пересчитан с учётом комиссии
+     */
     public function getList(): array {
         $data = $this->getOriginalList();
 
@@ -17,26 +20,38 @@ class CurrencyService extends CurrencyData {
         $list = [];
 
         foreach($data as $val) {
-            $rate = $val['symbol'] == BASIC_CURRENCY ? 1 : $val['rateUsd'] / COMISSION_COEFFICIENT;
-            $list[$val['symbol']] = $rate;
+            $symbol = $val['symbol'];
+            $rateUsd = $val['rateUsd'];
+            $rate = $symbol == BASIC_CURRENCY ? $rateUsd : $this->recalcRate($rateUsd);
+            $list[$symbol] = $rate;
         }
+
+        unset($data);
 
         asort($list);
 
         return $list;
     }
 
+    /**
+     * Возвращает одной конкретной валюты с учётом комиссии
+     */
     public function getCurrency(string $symbol): array {
         $cur = $this->getBySymbol($symbol);
         if($symbol == BASIC_CURRENCY) {
             return $cur;
         }
 
-        $cur['rateUsd'] /= COMISSION_COEFFICIENT;
-
         return [
-            $symbol => $cur['rateUsd']
+            $symbol => $this->recalcRate($cur['rateUsd']),
         ];
+    }
+
+    /**
+     * Возвращает пересчитанный курс с учётом комиссии
+     */
+    private function recalcRate(float $rate): float {
+        return $rate / COMISSION_COEFFICIENT;
     }
 
 }
