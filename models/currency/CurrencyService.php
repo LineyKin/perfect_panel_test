@@ -7,10 +7,22 @@ define("COMISSION_COEFFICIENT", 1.02); // наша комиисия - 2%
 
 class CurrencyService extends CurrencyData {
 
+    public function rates(mixed $currency): array {
+        if (is_null($currency)) {
+            return $this->getList();
+        }
+
+        return $this->getCurrency($currency);
+    }
+
+    public function convert(): array {
+        return [];
+    }
+
     /**
      * Возвращает список валют, курс которых пересчитан с учётом комиссии
      */
-    public function getList(): array {
+    private function getList(): array {
         $data = $this->getOriginalList();
 
         if($data == []) {
@@ -36,7 +48,7 @@ class CurrencyService extends CurrencyData {
     /**
      * Возвращает одной конкретной валюты с учётом комиссии
      */
-    public function getCurrency(string $symbol): array {
+    private function getCurrency(string $symbol): array {
         $cur = $this->getBySymbol($symbol);
         if($symbol == BASIC_CURRENCY) {
             return $cur;
