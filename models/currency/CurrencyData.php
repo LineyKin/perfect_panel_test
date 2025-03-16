@@ -4,6 +4,7 @@ namespace app\models\currency;
 
 use yii\httpclient\Client;
 use app\helpers\DebugHelper;
+use app\constants\Http;
 
 class CurrencyData {
 
@@ -57,7 +58,7 @@ class CurrencyData {
 
         // запрос на список курсов валют из стороннего сервиса
         $response = $httpClient->createRequest()
-        ->setMethod('GET')
+        ->setMethod(Http::METHOD_GET)
         ->setUrl(self::CURRENCY_API)
         ->send();
 

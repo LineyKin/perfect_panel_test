@@ -2,37 +2,22 @@
 
 namespace app\controllers;
 
-
 use yii\web\Controller;
 use app\models\currency\CurrencyService;
 use app\filters\TokenAuthFilter;
 use app\helpers\DebugHelper;
 use Yii;
-
-define("HTTP_METHOD_GET", "GET");
-define("HTTP_METHOD_POST", "POST");
-
-define("STATUS_SUCCESS", "success");
-define("STATUS_ERROR", "error");
-
-define("BAD_REQUEST_CODE", 400);
-define("OK_CODE", 200);
+use app\constants\Http;
 
 class ApiController extends Controller {
+
+    const STATUS_SUCCESS = "success";
+    const STATUS_ERROR = "error";
 
     /**
      * Отключаем CSRF-валидацию
      */
     public $enableCsrfValidation = false;
-
-    private $httpMethod;
-
-    public function __construct($id, $module, $config = [])
-    {
-        parent::__construct($id, $module, $config = []);
-
-        $this->httpMethod = Yii::$app->request->method;
-    }
 
     public function behaviors()
     {
@@ -55,87 +40,61 @@ class ApiController extends Controller {
         $model->method = Yii::$app->request->get('method');
 
         if(!$model->validate()) {
-            $errors = $model->errors;
-            Yii::$app->response->statusCode = BAD_REQUEST_CODE;
+            Yii::$app->response->statusCode = Http::CODE_BAD_REQUEST;
             return Yii::$app->response->data = [
-                'status' => STATUS_ERROR,
-                'code' => BAD_REQUEST_CODE,
-                'message' => $errors,
+                'status' => self::STATUS_ERROR,
+                'code' => Http::CODE_BAD_REQUEST,
+                'message' => $model->errors,
             ];
         }
+
+        $model->http_method = Yii::$app->request->method;
 
         switch ($model->method) {
             case $model::METHOD_RATES:
 
-                /**
-                 * Проверяем, что это GET-запрос
-                 */
-                if($this->httpMethod != HTTP_METHOD_GET) {
-                    Yii::$app->response->statusCode = BAD_REQUEST_CODE;
+                $model->scenario = $model::SCENARIO_RATES;
+
+                if(!$model->validate()) {
+                    Yii::$app->response->statusCode = Http::CODE_BAD_REQUEST;
                     return Yii::$app->response->data = [
-                        'status' => STATUS_ERROR,
-                        'code' => BAD_REQUEST_CODE,
-                        'message' => sprintf("Unaleble method %s. Need method %s",$this->httpMethod, HTTP_METHOD_GET),
+                        'status' => self::STATUS_ERROR,
+                        'code' => Http::CODE_BAD_REQUEST,
+                        'message' => $model->errors,
                     ];
                 }
 
-
-
-                $model->scenario = $model::SCENARIO_RATES;
                 $model->currency = Yii::$app->request->get('currency');
 
                 /**
                  * Возвращаем ответ
                  */
-                Yii::$app->response->statusCode = OK_CODE;
+                Yii::$app->response->statusCode = Http::CODE_OK;
                 return Yii::$app->response->data = [
-                    'status' => STATUS_SUCCESS,
-                    'code' => OK_CODE,
+                    'status' => self::STATUS_SUCCESS,
+                    'code' => Http::CODE_OK,
                     'data' => $model->rates(),
                 ];
             case $model::METHOD_CONVERT:
 
-                /**
-                 * Проверяем, что это POST-запрос
-                 */
-                if($this->httpMethod != HTTP_METHOD_POST) {
-                    Yii::$app->response->statusCode = BAD_REQUEST_CODE;
-                    return Yii::$app->response->data = [
-                        'status' => STATUS_ERROR,
-                        'code' => BAD_REQUEST_CODE,
-                        'message' => sprintf("Unaleble method %s. Need method %s",$this->httpMethod, HTTP_METHOD_POST),
-                    ];
-                }
-
-                /**
-                 * Получаем данные из тела POST-запроса
-                 */
-                $postParams = Yii::$app->request->post();
-
                 $model->scenario = $model::SCENARIO_CONVERT;
-                $model->attributes = $postParams;
+                $model->attributes = Yii::$app->request->post();
 
                 if ($model->validate()) {
-                     /**
-                     * TODO присвоить ключу data данные метода convert()
-                     */
-                    Yii::$app->response->statusCode = OK_CODE;
+                    Yii::$app->response->statusCode = Http::CODE_OK;
                     return [
-                        'status' => STATUS_SUCCESS,
-                        'code' => OK_CODE,
-                        'data' => $postParams,
-                    ];
-                } else {
-                    // проверка не удалась:  $errors - это массив содержащий сообщения об ошибках
-                    $errors = $model->errors;
-
-                    Yii::$app->response->statusCode = BAD_REQUEST_CODE;
-                    return Yii::$app->response->data = [
-                        'status' => STATUS_ERROR,
-                        'code' => BAD_REQUEST_CODE,
-                        'message' => $errors,
+                        'status' => self::STATUS_SUCCESS,
+                        'code' => Http::CODE_OK,
+                        'data' => $model->convert(),
                     ];
                 }
+
+                Yii::$app->response->statusCode = Http::CODE_BAD_REQUEST;
+                return Yii::$app->response->data = [
+                    'status' => self::STATUS_ERROR,
+                    'code' => Http::CODE_BAD_REQUEST,
+                    'message' => $model->errors,
+                ];
         }
     }
 }

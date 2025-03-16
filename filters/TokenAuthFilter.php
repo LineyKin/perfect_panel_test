@@ -5,8 +5,7 @@ namespace app\filters;
 use app\helpers\DebugHelper;
 use yii\base\ActionFilter;
 use Yii;
-
-define("INVALID_TOKEN_STATUS_CODE", 403);
+use app\constants\Http;
 
 class TokenAuthFilter extends ActionFilter
 {
@@ -23,16 +22,16 @@ class TokenAuthFilter extends ActionFilter
         }
 
         // Проверяем токен
-        if ($token === null || $token !== $this->token) {
+        if (is_null($token) || $token !== $this->token) {
             // Устанавливаем формат ответа на JSON
             Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-            Yii::$app->response->statusCode = INVALID_TOKEN_STATUS_CODE;
+            Yii::$app->response->statusCode = Http::CODE_FORBIDDEN;
 
             // Возвращаем JSON-ответ
             Yii::$app->response->data = [
                 'status' => 'error',
-                'code' => INVALID_TOKEN_STATUS_CODE,
+                'code' => Http::CODE_FORBIDDEN,
                 'message' => 'Invalid token',
             ];
 

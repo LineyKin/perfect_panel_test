@@ -4,6 +4,7 @@ namespace app\models\currency;
 
 use app\models\currency\CurrencyData;
 use yii\base\Model;
+use app\constants\Http;
 
 class CurrencyService extends Model {
 
@@ -12,6 +13,7 @@ class CurrencyService extends Model {
     public $currency_to;
     public $value;
     public $method;
+    public $http_method;
 
     const BASIC_CURRENCY = "USD";
     const COMISSION_COEFFICIENT = 1.02; // наша комиисия - 2%
@@ -26,8 +28,8 @@ class CurrencyService extends Model {
     {
         return [
             self::SCENARIO_DEFAULT => ['method'],
-            self::SCENARIO_RATES => ['currency'],
-            self::SCENARIO_CONVERT => ['currency_from', 'currency_to', 'value'],
+            self::SCENARIO_RATES => ['currency', 'http_method'],
+            self::SCENARIO_CONVERT => ['currency_from', 'currency_to', 'value', 'http_method'],
         ];
     }
 
@@ -40,9 +42,11 @@ class CurrencyService extends Model {
 
             // когда вызываем метод rates
             [['currency'], 'safe', 'on' => self::SCENARIO_RATES],
+            ['http_method', 'in', 'range' => [Http::METHOD_GET], 'on' => self::SCENARIO_RATES],
 
             // когда вызываем метод convert
             [['currency_from', 'currency_to', 'value'], 'required', 'on' => self::SCENARIO_CONVERT],
+            ['http_method', 'in', 'range' => [Http::METHOD_POST], 'on' => self::SCENARIO_CONVERT],
         ];
     }
 
@@ -55,7 +59,7 @@ class CurrencyService extends Model {
     }
 
     public function convert(): array {
-        return [];
+        return ['empty data yet'];
     }
 
     /**
