@@ -11,7 +11,7 @@ class CurrencyData {
     const CURRENCY_API = "https://api.coincap.io/v2/rates";
 
     public function getExchangePair(string $from, $to): array {
-        $list = $this->getOriginalList();
+        $list = $this->getList();
         if ($list == []) {
             return [];
         }
@@ -39,7 +39,7 @@ class CurrencyData {
     }
 
     public function getBySymbol(string $symbol): array {
-        $list = $this->getOriginalList();
+        $list = $this->getList();
         if ($list == []) {
             return [];
         }
@@ -53,7 +53,7 @@ class CurrencyData {
         return [];
     }
 
-    public function getOriginalList(): array {
+    public function getList(): array {
         $httpClient = new Client();
 
         // запрос на список курсов валют из стороннего сервиса

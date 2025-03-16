@@ -16,7 +16,8 @@ class CurrencyService extends Model {
     public $http_method;
 
     const BASIC_CURRENCY = "USD";
-    const COMISSION_COEFFICIENT = 1.02; // наша комиисия - 2%
+    const COMISSION = 0.02; // наша комиисия - 2%
+    const MIN_CONVERT_VALUE = 0.01; // минимальное количество валюты для обмена
 
     const SCENARIO_RATES = 1;
     const SCENARIO_CONVERT = 2;
@@ -47,6 +48,10 @@ class CurrencyService extends Model {
             // когда вызываем метод convert
             [['currency_from', 'currency_to', 'value'], 'required', 'on' => self::SCENARIO_CONVERT],
             ['http_method', 'in', 'range' => [Http::METHOD_POST], 'on' => self::SCENARIO_CONVERT],
+            ['value', 'number', 'min' => self::MIN_CONVERT_VALUE, 'on' => self::SCENARIO_CONVERT],
+
+             // Проверка, что currency_from не равен currency_to
+            ['currency_to', 'compare', 'compareAttribute' => 'currency_from', 'operator' => '!=', 'on' => self::SCENARIO_CONVERT],
         ];
     }
 
@@ -59,7 +64,27 @@ class CurrencyService extends Model {
     }
 
     public function convert(): array {
-        return ['empty data yet'];
+        $currencyData = new CurrencyData();
+        $data = $currencyData->getExchangePair($this->currency_from, $this->currency_to);
+        unset($currencyData);
+
+        // расчёт обменного курса
+        $rateFrom = $data['currency_from']['rateUsd'];
+        $rateTo = $data['currency_to']['rateUsd'];
+        $exchangeRate = $this->recalcRate($rateFrom / $rateTo);
+
+        // расчёт количества возвращаемой валюты, которую мы обменяли
+        $convertedValue = $exchangeRate * $this->value;
+        $convertedValue = $convertedValue >= 1 ? round($convertedValue, 2) : round($convertedValue, 10);
+
+        return [
+            'currency_from' => $this->currency_from,
+            'currency_to' => $this->currency_to,
+            'value' => $this->value,
+            'converted_value' => $convertedValue,
+            'rate' => $exchangeRate,
+            //'data' => $data
+        ];
     }
 
     /**
@@ -67,7 +92,7 @@ class CurrencyService extends Model {
      */
     private function getList(): array {
         $currencyData = new CurrencyData();
-        $data = $currencyData->getOriginalList();
+        $data = $currencyData->getList();
         unset($currencyData);
 
         if($data == []) {
@@ -111,7 +136,7 @@ class CurrencyService extends Model {
      * Возвращает пересчитанный курс с учётом комиссии
      */
     private function recalcRate(float $rate): float {
-        return $rate / self::COMISSION_COEFFICIENT;
+        return $rate * (1 - self::COMISSION);
     }
 
 }
