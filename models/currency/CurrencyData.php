@@ -5,11 +5,11 @@ namespace app\models\currency;
 use yii\httpclient\Client;
 use app\helpers\DebugHelper;
 
-define("CURRENCY_API", "https://api.coincap.io/v2/rates");
-
 class CurrencyData {
 
-    protected function getExchangePair(string $from, $to): array {
+    const CURRENCY_API = "https://api.coincap.io/v2/rates";
+
+    public function getExchangePair(string $from, $to): array {
         $list = $this->getOriginalList();
         if ($list == []) {
             return [];
@@ -37,7 +37,7 @@ class CurrencyData {
         return [];
     }
 
-    protected function getBySymbol(string $symbol): array {
+    public function getBySymbol(string $symbol): array {
         $list = $this->getOriginalList();
         if ($list == []) {
             return [];
@@ -52,13 +52,13 @@ class CurrencyData {
         return [];
     }
 
-    protected function getOriginalList(): array {
+    public function getOriginalList(): array {
         $httpClient = new Client();
 
         // запрос на список курсов валют из стороннего сервиса
         $response = $httpClient->createRequest()
         ->setMethod('GET')
-        ->setUrl(CURRENCY_API)
+        ->setUrl(self::CURRENCY_API)
         ->send();
 
         if ($response->isOk) {

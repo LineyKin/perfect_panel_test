@@ -9,8 +9,6 @@ use app\filters\TokenAuthFilter;
 use app\helpers\DebugHelper;
 use Yii;
 
-define("PARAM_METHOD_RATES", "rates");
-define("PARAM_METHOD_CONVERT", "convert");
 define("HTTP_METHOD_GET", "GET");
 define("HTTP_METHOD_POST", "POST");
 
@@ -28,14 +26,12 @@ class ApiController extends Controller {
     public $enableCsrfValidation = false;
 
     private $httpMethod;
-    private $paramMethod;
 
     public function __construct($id, $module, $config = [])
     {
         parent::__construct($id, $module, $config = []);
 
         $this->httpMethod = Yii::$app->request->method;
-        $this->paramMethod = Yii::$app->request->get('method');
     }
 
     public function behaviors()
@@ -55,34 +51,21 @@ class ApiController extends Controller {
          */
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-        /**
-         * Возвращаем ошибку, если не указан параметр method
-         */
-        if(is_null($this->paramMethod)) {
+        $model = new CurrencyService();
+        $model->method = Yii::$app->request->get('method');
+
+        if(!$model->validate()) {
+            $errors = $model->errors;
             Yii::$app->response->statusCode = BAD_REQUEST_CODE;
             return Yii::$app->response->data = [
                 'status' => STATUS_ERROR,
                 'code' => BAD_REQUEST_CODE,
-                'message' => "param 'method' not found",
+                'message' => $errors,
             ];
         }
 
-        /**
-         * Возвращаем ошибку, если указан неизвестный параметр method
-         */
-        if(!in_array($this->paramMethod, [PARAM_METHOD_RATES, PARAM_METHOD_CONVERT])) {
-            Yii::$app->response->statusCode = BAD_REQUEST_CODE;
-            return Yii::$app->response->data = [
-                'status' => STATUS_ERROR,
-                'code' => BAD_REQUEST_CODE,
-                'message' => sprintf("Unknown method %s", $this->paramMethod),
-            ];
-        }
-
-        $currencyService = new CurrencyService();
-
-        switch ($this->paramMethod) {
-            case PARAM_METHOD_RATES:
+        switch ($model->method) {
+            case $model::METHOD_RATES:
 
                 /**
                  * Проверяем, что это GET-запрос
@@ -96,7 +79,10 @@ class ApiController extends Controller {
                     ];
                 }
 
-                $currencyParam = Yii::$app->request->get('currency');
+
+
+                $model->scenario = $model::SCENARIO_RATES;
+                $model->currency = Yii::$app->request->get('currency');
 
                 /**
                  * Возвращаем ответ
@@ -105,9 +91,9 @@ class ApiController extends Controller {
                 return Yii::$app->response->data = [
                     'status' => STATUS_SUCCESS,
                     'code' => OK_CODE,
-                    'data' => $currencyService->rates($currencyParam),
+                    'data' => $model->rates(),
                 ];
-            case PARAM_METHOD_CONVERT:
+            case $model::METHOD_CONVERT:
 
                 /**
                  * Проверяем, что это POST-запрос
@@ -126,27 +112,30 @@ class ApiController extends Controller {
                  */
                 $postParams = Yii::$app->request->post();
 
-                /**
-                 * Проверяем, что данные переданы
-                 */
-                if (empty($postParams)) {
-                    Yii::$app->response->statusCode = BAD_REQUEST_CODE;
+                $model->scenario = $model::SCENARIO_CONVERT;
+                $model->attributes = $postParams;
+
+                if ($model->validate()) {
+                     /**
+                     * TODO присвоить ключу data данные метода convert()
+                     */
+                    Yii::$app->response->statusCode = OK_CODE;
                     return [
+                        'status' => STATUS_SUCCESS,
+                        'code' => OK_CODE,
+                        'data' => $postParams,
+                    ];
+                } else {
+                    // проверка не удалась:  $errors - это массив содержащий сообщения об ошибках
+                    $errors = $model->errors;
+
+                    Yii::$app->response->statusCode = BAD_REQUEST_CODE;
+                    return Yii::$app->response->data = [
                         'status' => STATUS_ERROR,
                         'code' => BAD_REQUEST_CODE,
-                        'message' => 'No data in post request body',
+                        'message' => $errors,
                     ];
                 }
-            
-                /**
-                 * TODO присвоить ключу data данные метода convert()
-                 */
-                Yii::$app->response->statusCode = OK_CODE;
-                return [
-                    'status' => STATUS_SUCCESS,
-                    'code' => OK_CODE,
-                    'data' => $postParams,
-                ];
         }
     }
 }

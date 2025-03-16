@@ -1,18 +1,57 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace app\models\currency;
 
-define("BASIC_CURRENCY", "USD");
-define("COMISSION_COEFFICIENT", 1.02); // наша комиисия - 2%
+use app\models\currency\CurrencyData;
+use yii\base\Model;
 
-class CurrencyService extends CurrencyData {
+class CurrencyService extends Model {
 
-    public function rates(mixed $currency): array {
-        if (is_null($currency)) {
+    public $currency;
+    public $currency_from;
+    public $currency_to;
+    public $value;
+    public $method;
+
+    const BASIC_CURRENCY = "USD";
+    const COMISSION_COEFFICIENT = 1.02; // наша комиисия - 2%
+
+    const SCENARIO_RATES = 1;
+    const SCENARIO_CONVERT = 2;
+
+    const METHOD_RATES = 'rates';
+    const METHOD_CONVERT = 'convert';
+
+    public function scenarios()
+    {
+        return [
+            self::SCENARIO_DEFAULT => ['method'],
+            self::SCENARIO_RATES => ['currency'],
+            self::SCENARIO_CONVERT => ['currency_from', 'currency_to', 'value'],
+        ];
+    }
+
+    public function rules()
+    {
+        return [
+            // общие правила
+            [['method'], 'required', 'on' => self::SCENARIO_DEFAULT],
+            ['method', 'in', 'range' => [self::METHOD_CONVERT, self::METHOD_RATES], 'on' => self::SCENARIO_DEFAULT],
+
+            // когда вызываем метод rates
+            [['currency'], 'safe', 'on' => self::SCENARIO_RATES],
+
+            // когда вызываем метод convert
+            [['currency_from', 'currency_to', 'value'], 'required', 'on' => self::SCENARIO_CONVERT],
+        ];
+    }
+
+    public function rates(): array {
+        if (is_null($this->currency)) {
             return $this->getList();
         }
 
-        return $this->getCurrency($currency);
+        return $this->getCurrency($this->currency);
     }
 
     public function convert(): array {
@@ -23,7 +62,9 @@ class CurrencyService extends CurrencyData {
      * Возвращает список валют, курс которых пересчитан с учётом комиссии
      */
     private function getList(): array {
-        $data = $this->getOriginalList();
+        $currencyData = new CurrencyData();
+        $data = $currencyData->getOriginalList();
+        unset($currencyData);
 
         if($data == []) {
             return [];
@@ -33,8 +74,8 @@ class CurrencyService extends CurrencyData {
 
         foreach($data as $val) {
             $symbol = $val['symbol'];
-            $rateUsd = $val['rateUsd'];
-            $rate = $symbol == BASIC_CURRENCY ? $rateUsd : $this->recalcRate($rateUsd);
+            $rateUsd = (float) $val['rateUsd'];
+            $rate = $symbol == self::BASIC_CURRENCY ? $rateUsd : $this->recalcRate($rateUsd);
             $list[$symbol] = $rate;
         }
 
@@ -46,16 +87,19 @@ class CurrencyService extends CurrencyData {
     }
 
     /**
-     * Возвращает одной конкретной валюты с учётом комиссии
+     * Возвращает данные одной конкретной валюты с учётом комиссии
      */
     private function getCurrency(string $symbol): array {
-        $cur = $this->getBySymbol($symbol);
-        if($symbol == BASIC_CURRENCY) {
+        $currencyData = new CurrencyData();
+        $cur = $currencyData->getBySymbol($symbol);
+        unset($currencyData);
+
+        if($symbol == self::BASIC_CURRENCY) {
             return $cur;
         }
 
         return [
-            $symbol => $this->recalcRate($cur['rateUsd']),
+            $symbol => $this->recalcRate((float) $cur['rateUsd']),
         ];
     }
 
@@ -63,7 +107,7 @@ class CurrencyService extends CurrencyData {
      * Возвращает пересчитанный курс с учётом комиссии
      */
     private function recalcRate(float $rate): float {
-        return $rate / COMISSION_COEFFICIENT;
+        return $rate / self::COMISSION_COEFFICIENT;
     }
 
 }
