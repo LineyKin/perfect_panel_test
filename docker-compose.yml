@@ -7,3 +7,5 @@ services:
       - ./:/app:delegated
     ports:
       - '8000:80'
+    env_file:
+      - .env
