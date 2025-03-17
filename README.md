@@ -54,3 +54,22 @@ nano .env
 ```rb
 docker compose up -d
 ```
+
+## Проверка задания №2
+
+API для получения списка валют
+```rb
+http://localhost:8000/api/v1?method=rates
+```
+
+API для получения курса одной конкретной валюты
+```rb
+http://localhost:8000/api/v1?method=rates&currency=BTC
+```
+
+API для конвертации
+```rb
+http://localhost:8000/api/v1?method=convert
+```
+
+Тестировать удобно в postman. Последний API это POST-запрос. Параметры передаются в теле. Для заполнения тела перейдём во вкладку Body. Выберем в списке слева form-data или  x-www-form-urlencoded и заполняем ключи и значения.
