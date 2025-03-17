@@ -9,20 +9,21 @@ use app\constants\Http;
 
 class TokenAuthFilter extends ActionFilter
 {
-    public $token; // Фиксированный токен
+    public $token; // токен из .env
+    const TOKEN_PATTERN = '/^Bearer\s+([\w)]{64})$/';
 
     public function beforeAction($action)
     {
-        $token = null;
+        $headerToken = null; // токен из заголовка
 
-        // Получаем токен из заголовка
+        // Получаем и валидируем токен из заголовка
         $authHeader = Yii::$app->request->headers->get('Authorization');
-        if ($authHeader !== null && preg_match('/^Bearer\s+(.*?)$/', $authHeader, $matches)) {
-            $token = $matches[1];
+        if ($authHeader !== null && preg_match(self::TOKEN_PATTERN, $authHeader, $matches)) {
+            $headerToken = $matches[1];
         }
 
-        // Проверяем токен
-        if (is_null($token) || $token !== $this->token) {
+        // Сверяем с токеном из .env
+        if ($headerToken !== $this->token) {
             // Устанавливаем формат ответа на JSON
             Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
