@@ -1,5 +1,6 @@
-Решение задания №1
+## Решение задания №1
 
+```rb
 SELECT
     u.id AS `ID`,
     CONCAT(u.first_name, ' ', u.last_name) AS `Name`,
@@ -12,3 +13,6 @@ WHERE TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) BETWEEN 7 AND 17
     AND DATEDIFF(ub.return_date, ub.get_date) <= 14
 GROUP BY u.id
     HAVING COUNT(DISTINCT b.author) = 1 AND COUNT(b.name) = 2;
+```
+
+## Решение задания №2
