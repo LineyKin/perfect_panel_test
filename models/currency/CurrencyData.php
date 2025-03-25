@@ -5,6 +5,8 @@ namespace app\models\currency;
 use yii\httpclient\Client;
 use app\helpers\DebugHelper;
 use app\constants\Http;
+use yii\redis\Cache;
+use Yii;
 
 class CurrencyData {
 
@@ -54,6 +56,14 @@ class CurrencyData {
     }
 
     public function getList(): array {
+        $cacheKey = 'list';
+
+        // Получаем компонент кэша
+        $cache = Yii::$app->cache;
+        if ($cache->exists($cacheKey)) {
+            return $cache->get($cacheKey);
+        }
+
         $httpClient = new Client();
 
         // запрос на список курсов валют из стороннего сервиса
@@ -63,6 +73,8 @@ class CurrencyData {
         ->send();
 
         if ($response->isOk) {
+            // Сохраняем массив в кэш на 1 час (3600 секунд)
+            $cache->set($cacheKey, $response->data['data'], 10);
             return $response->data['data'];
         }
 

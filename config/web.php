@@ -17,7 +17,19 @@ $config = [
             'cookieValidationKey' => 'zBxcQE9O57SxSrb6ICGwbhIHTCOXImzQ',
         ],
         'cache' => [
-            'class' => 'yii\caching\FileCache',
+            //'class' => 'yii\caching\FileCache',
+            'class' => 'yii\redis\Cache',
+            'redis' => [
+                'hostname' => 'redis', // имя сервиса в Docker
+                'port' => 6379,
+                'database' => 0,
+            ]
+        ],
+        'redis' => [
+            'class' => 'yii\redis\Connection',
+            'hostname' => 'redis',
+            'port' => 6379,
+            'database' => 0,
         ],
         'user' => [
             'identityClass' => 'app\models\User',
